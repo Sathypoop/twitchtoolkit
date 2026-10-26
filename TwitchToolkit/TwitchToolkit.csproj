@@ -1,31 +1,47 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    <!-- Package references -->
-    <ItemGroup>
-        <PackageReference Include="MoonSharp"/>
-        <PackageReference Include="Krafs.Rimworld.Ref"/>
-        <PackageReference Include="Lib.Harmony" ExcludeAssets="runtime"/>
-    </ItemGroup>
-    
-    <!-- Local references -->
-    <ItemGroup>
-        <Reference Include="ToolkitCore">
-            <Private>false</Private>
-        </Reference>
-        <Reference Include="TwitchLib.Client">
-            <Private>false</Private>
-            <HintPath>$(ToolkitCoreDir)\Assemblies\TwitchLib.Client.dll</HintPath>
-        </Reference>
-        <Reference Include="TwitchLib.Client.Enums">
-            <Private>false</Private>
-            <HintPath>$(ToolkitCoreDir)\Assemblies\TwitchLib.Client.Enums.dll</HintPath>
-        </Reference>
-        <Reference Include="TwitchLib.Client.Models">
-            <Private>false</Private>
-            <HintPath>$(ToolkitCoreDir)\Assemblies\TwitchLib.Client.Models.dll</HintPath>
-        </Reference>
-        <Reference Include="TwitchLib.Communication">
-            <Private>false</Private>
-            <HintPath>$(ToolkitCoreDir)\Assemblies\TwitchLib.Communication.dll</HintPath>
-        </Reference>
-    </ItemGroup>
+  <!-- Package references -->
+  <ItemGroup>
+    <PackageReference Include="MoonSharp"/>
+    <!-- <PackageReference Include="Krafs.Rimworld.Ref"/> To be re-added when RimRef is up to date with 1.7 -->
+    <PackageReference Include="Lib.Harmony" ExcludeAssets="runtime"/>
+  </ItemGroup>
+
+  <!-- Local references -->
+  <ItemGroup>
+    <Reference Include="ToolkitCore">
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TwitchLib.Client">
+      <Private>false</Private>
+      <HintPath>$(ToolkitCoreDir)\Assemblies\TwitchLib.Client.dll</HintPath>
+    </Reference>
+    <Reference Include="TwitchLib.Client.Enums">
+      <Private>false</Private>
+      <HintPath>$(ToolkitCoreDir)\Assemblies\TwitchLib.Client.Enums.dll</HintPath>
+    </Reference>
+    <Reference Include="TwitchLib.Client.Models">
+      <Private>false</Private>
+      <HintPath>$(ToolkitCoreDir)\Assemblies\TwitchLib.Client.Models.dll</HintPath>
+    </Reference>
+    <Reference Include="TwitchLib.Communication">
+      <Private>false</Private>
+      <HintPath>$(ToolkitCoreDir)\Assemblies\TwitchLib.Communication.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Rimworld references - Pending RimRef 1.7 -->
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <Private>false</Private>
+      <HintPath>$(RimworldDir)\Assembly-CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityStubs">
+      <Private>false</Private>
+      <HintPath>$(RimworldDir)\UnityStubs.dll</HintPath>
+    </Reference>
+    <Reference Include="Waylith">
+      <Private>false</Private>
+      <HintPath>$(RimworldDir)\Waylith.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>

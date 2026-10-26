@@ -1,16 +1,14 @@
 ﻿<Project>
-    <PropertyGroup>
-        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    </PropertyGroup>
-    
-    <!-- RimWorld packages -->
-    <ItemGroup>
-        <PackageVersion Include="Lib.Harmony" Version="2.4.1" />
-        <PackageVersion Include="Krafs.Rimworld.Ref" Version="1.6.4566" />
-    </ItemGroup>
-    
-    <!-- Scripting packages -->
-    <ItemGroup>
-        <PackageVersion Include="MoonSharp" Version="2.0.0" />
-    </ItemGroup>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <!-- RimWorld packages -->
+  <ItemGroup>
+    <!-- <PackageVersion Include="Krafs.Rimworld.Ref" Version="1.6.4871" /> Pending RimRef 1.7 -->
+    <PackageVersion Include="Lib.Harmony" Version="2.4.3" />
+  </ItemGroup>
+  <!-- Scripting packages -->
+  <ItemGroup>
+    <PackageVersion Include="MoonSharp" Version="2.0.0" />
+  </ItemGroup>
 </Project>
