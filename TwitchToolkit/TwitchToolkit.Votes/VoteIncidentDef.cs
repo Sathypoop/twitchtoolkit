@@ -56,14 +56,15 @@ public class VoteIncidentDef : Vote
 
 	public override void EndVote()
 	{
-		//IL_0023: Unknown result type (might be due to invalid IL or missing erences)
-		//IL_002d: Expected O, but got Unknown
-		//IL_0064: Unknown result type (might be due to invalid IL or missing erences)
-		//IL_0069: Unknown result type (might be due to invalid IL or missing erences)
-		//IL_0078: Unknown result type (might be due to invalid IL or missing erences)
-		//IL_0083: Expected O, but got Unknown
-		Ticker.FiringIncidents.Enqueue(new FiringIncident(incidents[DecideWinner()], source, parms));
-		Ticker.lastEvent = DateTime.Now;
+        Ticker ticker = Current.Game.GetComponent<Ticker>();
+        //IL_0023: Unknown result type (might be due to invalid IL or missing erences)
+        //IL_002d: Expected O, but got Unknown
+        //IL_0064: Unknown result type (might be due to invalid IL or missing erences)
+        //IL_0069: Unknown result type (might be due to invalid IL or missing erences)
+        //IL_0078: Unknown result type (might be due to invalid IL or missing erences)
+        //IL_0083: Expected O, but got Unknown
+        ticker.FiringIncidents.Enqueue(new FiringIncident(incidents[DecideWinner()], source, parms));
+		ticker.lastEvent = DateTime.Now;
 		Find.WindowStack.TryRemove(typeof(VoteWindow), true);
 		Messages.Message(new Message((TaggedString)("Chat voted for: " + ((Def)incidents[DecideWinner()]).LabelCap), MessageTypeDefOf.NeutralEvent), true);
 	}

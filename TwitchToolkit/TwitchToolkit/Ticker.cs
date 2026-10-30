@@ -1,6 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Concurrent;
 using System.Threading;
 using RimWorld;
 using TwitchToolkit.Store;
@@ -10,181 +9,138 @@ using Verse;
 
 namespace TwitchToolkit;
 
-public class Ticker : Thing
+public class Ticker(Game game) : GameComponent
 {
-	public Timer timer = null;
+    public Timer timer = null;
 
-	public static long LastIRCPong = 0L;
+    public long LastIRCPong = DateTime.Now.ToFileTime();
 
-	public static Queue<FiringIncident> FiringIncidents = new Queue<FiringIncident>();
+    public readonly ConcurrentQueue<FiringIncident> FiringIncidents = new();
 
-	public static Queue<VoteEvent> VoteEvents = new Queue<VoteEvent>();
+    public readonly ConcurrentQueue<VoteEvent> VoteEvents = new();
 
-	public static Queue<IncidentWorker> Incidents = new Queue<IncidentWorker>();
+    public readonly ConcurrentQueue<IncidentWorker> Incidents = new();
 
-	public static Queue<IncidentHelper> IncidentHelpers = new Queue<IncidentHelper>();
+    public readonly ConcurrentQueue<IncidentHelper> IncidentHelpers = new();
 
-	public static Queue<IncidentHelperVariables> IncidentHelperVariables = new Queue<IncidentHelperVariables>();
+    public readonly ConcurrentQueue<IncidentHelperVariables> IncidentHelperVariables = new();
 
-	private static Thread _registerThread;
+    private readonly Game _game = game;
 
-	private static Game _game;
+    private readonly TwitchToolkit _mod = Toolkit.Mod;
 
-	private static TwitchToolkit _mod = Toolkit.Mod;
+    private int _lastMinute = -1;
 
-	private static Ticker _instance;
+    private int _lastCoinReward = -1;
 
-	private int[] _baseTimes = new int[5] { 20, 60, 120, 180, 999999 };
+    public DateTime lastEvent = DateTime.Now;
 
-	private int _lastMinute = -1;
+    public bool CreatedByController { get; internal set; }
 
-	private int _lastCoinReward = -1;
+    public override void GameComponentTick()
+    {
+        //IL_0191: Unknown result type (might be due to invalid IL or missing erences)
+        //IL_0198: Expected O, but got Unknown
+        try
+        {
+            if (_game == null || _mod == null)
+            {
+                Log.Warning("[TTK]: Ticker is not initialized yet, skipping tick");
+                return;
+            }
 
-	public static DateTime lastEvent;
+            _mod.Tick();
+            int minutes = (int)(_game.Info.RealPlayTimeInteracting / 60f);
+            double getTime = (double)Time.time / 60.0;
+            int time = Convert.ToInt32(Math.Truncate(getTime));
 
-	public bool CreatedByController { get; internal set; }
+            if(PurchaseRequestService.pendingPurchaseRequests.Count > 0)
+            {
+                Log.Warning("[TTK]: Processing pending purchase requests");
+                Purchase_Handler.ValidatePendingPurchaseRequests();
+            }
 
-	public static Ticker Instance
-	{
-		get
-		{
-			if (_instance == null)
-			{
-				_instance = new Ticker();
-			}
-			return _instance;
-		}
-	}
+            if (!IncidentHelpers.IsEmpty)
+            {
+                Log.Warning("[TTK]: Processing variable incident queue");
+                while (!IncidentHelpers.IsEmpty)
+                {
+                    if (IncidentHelpers.TryDequeue(out IncidentHelper incidentHelper2))
+                    {
+                        if (!(incidentHelper2 is VotingHelper))
+                        {
+                            Purchase_Handler.QueuePlayerMessage(incidentHelper2.Viewer, incidentHelper2.message);
+                        }
+                        incidentHelper2.TryExecute();
+                    }
+                }
+                Helper.playerMessages = [];
+            }
 
-	public Ticker()
-	{
-		//IL_0035: Unknown result type (might be due to invalid IL or missing erences)
-		//IL_003a: Unknown result type (might be due to invalid IL or missing erences)
-		//IL_003c: Unknown result type (might be due to invalid IL or missing erences)
-		//IL_0041: Unknown result type (might be due to invalid IL or missing erences)
-		//IL_004d: Expected O, but got Unknown
-		base.def = new ThingDef
-		{
-			tickerType = (TickerType)1,
-			isSaveable = false
-		};
-		_registerThread = new Thread(Register);
-		_registerThread.Start();
-		lastEvent = DateTime.Now;
-		LastIRCPong = DateTime.Now.ToFileTime();
-	}
 
-	private void Register()
-	{
-		while (true)
-		{
-			try
-			{
-				if (_game != Current.Game)
-				{
-					if (_game != null)
-					{
-						_game.tickManager.DeRegisterAllTickabilityFor((Thing)(object)this);
-						_game = null;
-					}
-					_game = Current.Game;
-					if (_game != null)
-					{
-						_game = Current.Game;
-						_game.tickManager.RegisterAllTickabilityFor((Thing)(object)this);
-						Toolkit.Mod.RegisterTicker();
-					}
-				}
-			}
-			catch (Exception ex)
-			{
-				Helper.Log("Exception: " + ex.Message + "\n" + ex.StackTrace);
-			}
-			finally
-			{
-				Thread.Sleep(1000);
-			}
-		}
-	}
+            while (!IncidentHelperVariables.IsEmpty)
+            {
+                Log.Warning("[TTK]: Processing variable incident queue - next incident");
 
-    protected override void Tick()
-	{
-		//IL_0191: Unknown result type (might be due to invalid IL or missing erences)
-		//IL_0198: Expected O, but got Unknown
-		try
-		{
-			if (_game == null || _mod == null)
-			{
-				return;
-			}
-			_mod.Tick();
-			int minutes = (int)(_game.Info.RealPlayTimeInteracting / 60f);
-			double getTime = (double)Time.time / 60.0;
-			int time = Convert.ToInt32(Math.Truncate(getTime));
-			if (IncidentHelpers.Count > 0)
-			{
-				while (IncidentHelpers.Count > 0)
-				{
-					IncidentHelper incidentHelper2 = IncidentHelpers.Dequeue();
-					if (!(incidentHelper2 is VotingHelper))
-					{
-						Purchase_Handler.QueuePlayerMessage(incidentHelper2.Viewer, incidentHelper2.message);
-					}
-					incidentHelper2.TryExecute();
-				}
-				Helper.playerMessages = new List<string>();
-			}
-			if (IncidentHelperVariables.Count > 0)
-			{
-				while (IncidentHelperVariables.Count > 0)
-				{
-					IncidentHelperVariables incidentHelper = IncidentHelperVariables.Dequeue();
-					Purchase_Handler.QueuePlayerMessage(incidentHelper.Viewer, incidentHelper.message, incidentHelper.storeIncident.variables);
-					incidentHelper.TryExecute();
-					if (Purchase_Handler.viewerNamesDoingVariableCommands.Contains(incidentHelper.Viewer.username))
-					{
-						Purchase_Handler.viewerNamesDoingVariableCommands.Remove(incidentHelper.Viewer.username);
-					}
-				}
-				Helper.playerMessages = new List<string>();
-			}
-			if (Incidents.Count > 0)
-			{
-				IncidentWorker incident2 = Incidents.Dequeue();
-				IncidentParms incidentParms = new IncidentParms();
-				incidentParms.target = (IIncidentTarget)(object)Helper.AnyPlayerMap;
-				incident2.TryExecute(incidentParms);
-			}
-			if (FiringIncidents.Count > 0)
-			{
-				Helper.Log("Firing " + ((Def)FiringIncidents.First().def).defName);
-				FiringIncident incident = FiringIncidents.Dequeue();
-				incident.def.Worker.TryExecute(incident.parms);
-			}
-			VoteHandler.CheckForQueuedVotes();
-			if (_lastCoinReward < 0)
-			{
-				_lastCoinReward = time;
-			}
-			else if (ToolkitSettings.EarningCoins && time - _lastCoinReward >= ToolkitSettings.CoinInterval && Viewers.jsonallviewers != null)
-			{
-				_lastCoinReward = time;
-				Viewers.AwardViewersCoins();
-			}
-			if (_lastMinute < 0)
-			{
-				_lastMinute = time;
-			}
-			else if (_lastMinute < time)
-			{
-				_lastMinute = time;
-				Toolkit.JobManager.CheckAllJobs();
-				Viewers.RefreshViewers();
-			}
-		}
-		catch (Exception ex)
-		{
-			Helper.Log("Exception: " + ex.Message + ex.StackTrace);
-		}
-	}
+                if (IncidentHelperVariables.TryDequeue(out IncidentHelperVariables incidentHelper))
+                {
+                    Purchase_Handler.QueuePlayerMessage(incidentHelper.Viewer, incidentHelper.message, incidentHelper.storeIncident.variables);
+                    incidentHelper.TryExecute();
+
+                    Purchase_Handler.viewerNamesDoingVariableCommands.Remove(incidentHelper.Viewer.username);
+                }
+                Helper.playerMessages = [];
+            }
+
+            if (!Incidents.IsEmpty)
+            {
+                if (Incidents.TryDequeue(out IncidentWorker incident))
+                {
+                    IncidentParms incidentParms = new()
+                    {
+                        target = (IIncidentTarget)(object)Helper.AnyPlayerMap
+                    };
+
+                    incident.TryExecute(incidentParms);
+                }
+            }
+
+            if (FiringIncidents.Count > 0)
+            {
+                if (FiringIncidents.TryDequeue(out FiringIncident incident))
+                {
+                    Helper.Log("Firing " + ((Def)incident.def).defName);
+                    incident.def.Worker.TryExecute(incident.parms);
+                }
+            }
+
+            VoteHandler.CheckForQueuedVotes();
+
+            if (_lastCoinReward < 0)
+            {
+                _lastCoinReward = time;
+            }
+            else if (ToolkitSettings.EarningCoins && time - _lastCoinReward >= ToolkitSettings.CoinInterval && Viewers.jsonallviewers != null)
+            {
+                _lastCoinReward = time;
+                Viewers.AwardViewersCoins();
+            }
+
+            if (_lastMinute < 0)
+            {
+                _lastMinute = time;
+            }
+            else if (_lastMinute < time)
+            {
+                _lastMinute = time;
+                Toolkit.JobManager.CheckAllJobs();
+                Viewers.RefreshViewers();
+            }
+        }
+        catch (Exception ex)
+        {
+            Helper.Log("Exception: " + ex.Message + ex.StackTrace);
+        }
+    }
+
 }

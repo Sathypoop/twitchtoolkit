@@ -33,11 +33,13 @@ public class Vote_RaidStrategy : Vote
 
 	public override void EndVote()
 	{
-		//IL_004f: Unknown result type (might be due to invalid IL or missing erences)
-		//IL_0059: Expected O, but got Unknown
-		parms.raidStrategy = allStrategies[DecideWinner()];
+		Ticker ticker = Current.Game.GetComponent<Ticker>();
+
+        //IL_004f: Unknown result type (might be due to invalid IL or missing erences)
+        //IL_0059: Expected O, but got Unknown
+        parms.raidStrategy = allStrategies[DecideWinner()];
 		Find.WindowStack.TryRemove(typeof(VoteWindow), true);
-		Ticker.FiringIncidents.Enqueue(new FiringIncident(worker.def, comp, parms));
+		ticker.FiringIncidents.Enqueue(new FiringIncident(worker.def, comp, parms));
 		Current.Game.GetComponent<StoryTellerVoteTracker>().LogStorytellerCompVote(pack);
 	}
 

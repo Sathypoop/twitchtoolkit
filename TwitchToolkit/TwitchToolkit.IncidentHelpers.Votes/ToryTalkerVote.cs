@@ -25,7 +25,9 @@ public class ToryTalkerVote : IncidentHelperVariables
 
 	public override void TryExecute()
 	{
-		Map map = Helper.AnyPlayerMap;
+		Ticker ticker = Current.Game.GetComponent<Ticker>();
+
+        Map map = Helper.AnyPlayerMap;
 		StorytellerComp_ToryTalker storytellerComp = new StorytellerComp_ToryTalker();
 		storytellerComp.forced = true;
 		using (IEnumerator<FiringIncident> enumerator = ((StorytellerComp)storytellerComp).MakeIntervalIncidents((IIncidentTarget)(object)map).GetEnumerator())
@@ -33,7 +35,7 @@ public class ToryTalkerVote : IncidentHelperVariables
 			if (enumerator.MoveNext())
 			{
 				FiringIncident incident = enumerator.Current;
-				Ticker.FiringIncidents.Enqueue(incident);
+				ticker.FiringIncidents.Enqueue(incident);
 			}
 		}
 		Viewer.TakeViewerCoins(storeIncident.cost);

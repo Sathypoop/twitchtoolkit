@@ -25,6 +25,8 @@ public class HodlBotVote : IncidentHelperVariables
 
 	public override void TryExecute()
 	{
+		Ticker ticker = Current.Game.GetComponent<Ticker>();
+
 		Map map = Helper.AnyPlayerMap;
 		StorytellerComp_HodlBot storytellerComp = new StorytellerComp_HodlBot();
 		storytellerComp.forced = true;
@@ -33,7 +35,7 @@ public class HodlBotVote : IncidentHelperVariables
 			if (enumerator.MoveNext())
 			{
 				FiringIncident incident = enumerator.Current;
-				Ticker.FiringIncidents.Enqueue(incident);
+				ticker.FiringIncidents.Enqueue(incident);
 			}
 		}
 		Viewer.TakeViewerCoins(storeIncident.cost);

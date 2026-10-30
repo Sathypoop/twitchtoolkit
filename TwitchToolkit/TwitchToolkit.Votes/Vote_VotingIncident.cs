@@ -37,7 +37,8 @@ public class Vote_VotingIncident : Vote
 	{
 		VotingIncident incident = incidents[DecideWinner()];
 		Find.WindowStack.TryRemove(typeof(VoteWindow), true);
-		Ticker.IncidentHelpers.Enqueue(incident.helper);
+		Ticker ticker = Current.Game.GetComponent<Ticker>();
+        ticker.IncidentHelpers.Enqueue(incident.helper);
 		StoryTellerVoteTracker tracker = Current.Game.GetComponent<StoryTellerVoteTracker>();
 		tracker.LogVoteIncident(incident);
 	}
