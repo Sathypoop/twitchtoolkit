@@ -44,13 +44,13 @@ public static class Purchase_Handler
         StoreIncidentSimple incident = allStoreIncidentsSimple.Find(s => productKey.ToLower() == s.abbreviation);
         if (incident != null)
         {
-            ResolvePurchaseSimple(viewer, twitchMessage, incident, formattedMessage);
+            QueueSimplePurchase(viewer, twitchMessage, incident, formattedMessage);
             return;
         }
         StoreIncidentVariables incidentVariables = allStoreIncidentsVariables.Find((StoreIncidentVariables s) => productKey.ToLower() == s.abbreviation);
         if (incidentVariables != null)
         {
-            ResolvePurchaseVariables(viewer, twitchMessage, incidentVariables, formattedMessage);
+            QueuePurchaseVariables(viewer, twitchMessage, incidentVariables, formattedMessage);
             return;
         }
         Item item = StoreInventory.items.Find((Item s) => s.abr == productKey);
@@ -68,58 +68,71 @@ public static class Purchase_Handler
                 commandSplit.Insert(3, "1");
             }
             formattedMessage = string.Join(" ", commandSplit.ToArray());
-            ResolvePurchaseVariables(viewer, twitchMessage, StoreIncidentDefOf.Item, formattedMessage);
+            QueuePurchaseVariables(viewer, twitchMessage, StoreIncidentDefOf.Item, formattedMessage);
         }
     }
 
-    public static void ResolvePurchaseSimple(Viewer viewer, ITwitchMessage twitchMessage, StoreIncidentSimple incident, string formattedMessage, bool separateChannel = false)
+    public static void ResolvePurchaseSimple(PendingSimplePurchaseRequest request)
     {
-        int cost = incident.cost;
-        if (cost < 1 || CheckIfViewerIsInVariableCommandList(viewer.username) || !CheckIfViewerHasEnoughCoins(viewer, cost) || CheckIfKarmaTypeIsMaxed(incident, viewer.username) || CheckIfIncidentIsOnCooldown(incident, viewer.username))
+        int cost = request.incident.cost;
+        if (cost < 1 || CheckIfViewerIsInVariableCommandList(request.viewer.username) ||
+            !CheckIfViewerHasEnoughCoins(request.viewer, cost) ||
+            CheckIfKarmaTypeIsMaxed(request.incident, request.viewer.username) ||
+            CheckIfIncidentIsOnCooldown(request.incident, request.viewer.username))
         {
             return;
         }
-        IncidentHelper helper = StoreIncidentMaker.MakeIncident(incident);
+
+        IncidentHelper helper = StoreIncidentMaker.MakeIncident(request.incident);
+
         if (helper == null)
         {
-            Helper.Log("Missing helper for incident " + incident.defName);
+            Helper.Log("Missing helper for incident " + request.incident.defName);
             return;
         }
         if (!helper.IsPossible())
         {
-            TwitchWrapper.SendChatMessage(("@" + viewer.username + " " + Translator.Translate("TwitchToolkitEventNotPossible")));
+            TwitchWrapper.SendChatMessage(("@" + request.viewer.username + " " + Translator.Translate("TwitchToolkitEventNotPossible")));
             return;
         }
         if (!ToolkitSettings.UnlimitedCoins)
         {
-            viewer.TakeViewerCoins(cost);
+            request.viewer.TakeViewerCoins(cost);
         }
         Store_Component component = Current.Game.GetComponent<Store_Component>();
-        helper.Viewer = viewer;
-        helper.message = formattedMessage;
+        helper.Viewer = request.viewer;
+        helper.message = request.formattedMessage;
 
         Ticker ticker = Current.Game.GetComponent<Ticker>();
         ticker.IncidentHelpers.Enqueue(helper);
 
-        Store_Logger.LogPurchase(viewer.username, formattedMessage);
-        component.LogIncident(incident);
-        viewer.CalculateNewKarma(incident.karmaType, cost);
+        Store_Logger.LogPurchase(request.viewer.username, request.formattedMessage);
+        component.LogIncident(request.incident);
+        request.viewer.CalculateNewKarma(request.incident.karmaType, cost);
+
         if (ToolkitSettings.PurchaseConfirmations)
         {
-            TwitchWrapper.SendChatMessage(Helper.ReplacePlaceholder((Translator.Translate("TwitchToolkitEventPurchaseConfirm")), null, null, null, null, null, null, null, null, null, null, null, null, first: GenText.CapitalizeFirst(((Def)incident).label), viewer: viewer.username));
+            TwitchWrapper.SendChatMessage(Helper.ReplacePlaceholder((Translator.Translate("TwitchToolkitEventPurchaseConfirm")), null, null, null, null, null, null, null, null, null, null, null, null, first: GenText.CapitalizeFirst(((Def)request.incident).label), viewer: request.viewer.username));
         }
     }
 
-    public static void ResolvePurchaseVariables(Viewer viewer, ITwitchMessage twitchMessage, StoreIncidentVariables incident, string formattedMessage, bool separateChannel = false)
+    public static void QueuePurchaseVariables(Viewer viewer, ITwitchMessage twitchMessage, StoreIncidentVariables incident, string formattedMessage, bool separateChannel = false)
     {
-        PurchaseRequestService.pendingPurchaseRequests.Enqueue(new PendingPurchaseRequest(formattedMessage, viewer, incident, separateChannel));
+        Log.Warning("[TTK]: Viewer " + viewer.username + " attempted to variable purchase " + ((Def)incident).defName + " and it has been queued for validation.");
+        PurchaseRequestService.pendingVariablePurchaseRequests.Enqueue(new PendingVariablePurchaseRequest(formattedMessage, viewer, incident, separateChannel));
     }
 
-    public static void ValidatePendingPurchaseRequests()
+    public static void QueueSimplePurchase(Viewer viewer, ITwitchMessage twitchMessage, StoreIncidentSimple incident, string formattedMessage, bool separateChannel = false)
+    {
+        Log.Warning("[TTK]: Viewer " + viewer.username + " attempted to simple purchase " + ((Def)incident).defName + " and it has been queued for validation.");
+        PurchaseRequestService.pendingSimplePurchaseRequests.Enqueue(new PendingSimplePurchaseRequest(formattedMessage, viewer, incident, separateChannel));
+    }
+
+    public static void ValidatePendingVariablePurchaseRequests()
     {
         Ticker ticker = Current.Game.GetComponent<Ticker>();
 
-        while (PurchaseRequestService.pendingPurchaseRequests.TryDequeue(out var request))
+        while (PurchaseRequestService.pendingVariablePurchaseRequests.TryDequeue(out var request))
         {
             int cost = request.incident.cost;
             if ((cost < 1 && ((Def)request.incident).defName != "Item") || CheckIfViewerIsInVariableCommandList(request.viewer.username) || !CheckIfViewerHasEnoughCoins(request.viewer, cost))
@@ -163,6 +176,15 @@ public static class Purchase_Handler
             helper.Viewer = request.viewer;
             helper.message = request.formattedMessage;
             ticker.IncidentHelperVariables.Enqueue(helper);
+        }
+    }
+
+    public static void ValidatePendingSimplePurchaseRequests()
+    {
+        Ticker ticker = Current.Game.GetComponent<Ticker>();
+        while (PurchaseRequestService.pendingSimplePurchaseRequests.TryDequeue(out var request))
+        {
+            ResolvePurchaseSimple(request);
         }
     }
 
@@ -235,6 +257,7 @@ public static class Purchase_Handler
     {
         if (!ToolkitSettings.EventsHaveCooldowns)
         {
+            Log.Warning($"[TTK]: CheckIfIncidentIsOnCooldown: {((Def)incident).defName} is not on cooldown because EventsHaveCooldowns is false.");
             return false;
         }
         Store_Component component = Current.Game.GetComponent<Store_Component>();
@@ -266,6 +289,7 @@ public static class Purchase_Handler
             }
         }
         Helper.playerMessages.Add(output);
+        Log.Warning($"[TTK]: Queued message from {viewer.username}: {output}");
     }
 
     private static string AdminText(string input)
