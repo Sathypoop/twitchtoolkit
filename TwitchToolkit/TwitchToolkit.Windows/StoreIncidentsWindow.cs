@@ -25,7 +25,7 @@ public class StoreIncidentsWindow : Window
 	public StoreIncidentsWindow()
 	{
         Store_IncidentEditor.UpdatePriceSheet();
-	}
+    }
 
 	public override void DoWindowContents(Rect inRect)
 	{
@@ -33,7 +33,7 @@ public class StoreIncidentsWindow : Window
 		{
 			UpdateList();
 		}
-		Rect rect = new Rect(0f, 0f, inRect.width, 60f);
+        Rect rect = new Rect(0f, 0f, inRect.width, 60f);
 		Text.Font =((GameFont)2);
 		Text.Anchor =((TextAnchor)4);
 		Widgets.Label(rect, "Store Incidents");
@@ -61,7 +61,7 @@ public class StoreIncidentsWindow : Window
 		Rect rect2 = GenUI.AtZero(inRect);
 		DoBottomButtons(rect2);
 		Rect outRect = rect2;
-		outRect.y = outRect.yMax - 65f;
+		outRect.height -= 65f;
 		if (storeIncidents.Count > 0)
 		{
 			float height = storeIncidents.Count * 24f;

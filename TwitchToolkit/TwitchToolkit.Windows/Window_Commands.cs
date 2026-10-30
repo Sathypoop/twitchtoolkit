@@ -52,7 +52,7 @@ public class Window_Commands : Window
 		Rect rect2 = GenUI.AtZero(inRect);
 		DoBottomButtons(rect2);
 		Rect outRect = rect2;
-		outRect.y = (((Rect)( outRect)).yMax - 65f);
+		outRect.height -= 65f;
 		if (allCommands.Count > 0)
 		{
 			float height = (float)allCommands.Count * 24f;
