@@ -2,7 +2,7 @@
 
 namespace TwitchToolkit;
 
-public class PendingPurchaseRequest(string formattedMessage, Viewer viewer, StoreIncidentVariables incident, bool separateChannel)
+public class PendingVariablePurchaseRequest(string formattedMessage, Viewer viewer, StoreIncidentVariables incident, bool separateChannel)
 {
     public readonly Viewer viewer = viewer;
     public readonly string formattedMessage = formattedMessage;

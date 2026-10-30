@@ -54,10 +54,16 @@ public class Ticker(Game game) : GameComponent
             double getTime = (double)Time.time / 60.0;
             int time = Convert.ToInt32(Math.Truncate(getTime));
 
-            if(PurchaseRequestService.pendingPurchaseRequests.Count > 0)
+            if(!PurchaseRequestService.pendingVariablePurchaseRequests.IsEmpty)
             {
                 Log.Warning("[TTK]: Processing pending purchase requests");
-                Purchase_Handler.ValidatePendingPurchaseRequests();
+                Purchase_Handler.ValidatePendingVariablePurchaseRequests();
+            }
+
+            if(!PurchaseRequestService.pendingSimplePurchaseRequests.IsEmpty)
+            {
+                Log.Warning("[TTK]: Processing pending simple purchase requests");
+                Purchase_Handler.ValidatePendingSimplePurchaseRequests();
             }
 
             if (!IncidentHelpers.IsEmpty)

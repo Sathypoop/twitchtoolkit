@@ -4,5 +4,6 @@ namespace TwitchToolkit;
 
 public static class PurchaseRequestService
 {
-    public static ConcurrentQueue<PendingPurchaseRequest> pendingPurchaseRequests = new();
+    public static ConcurrentQueue<PendingVariablePurchaseRequest> pendingVariablePurchaseRequests = new();
+    public static ConcurrentQueue<PendingSimplePurchaseRequest> pendingSimplePurchaseRequests = new();
 }
